@@ -9,9 +9,11 @@ import com.example.weatherapp.domain.model.DailyWeatherData
 import com.example.weatherapp.domain.model.HourlyWeatherData
 import com.example.weatherapp.domain.repository.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,14 +45,21 @@ class WeatherInfoViewModel @Inject constructor(
     }
 
     private suspend fun loadCurrentLocation(): Location? {
-        val location = locationTracker.getCurrentLocation()
+        val location = withContext(Dispatchers.IO) {
+            locationTracker.getCurrentLocation()
+        }
         _location.value = location
         return location
     }
 
     private fun loadHourlyWeather(lat: Double, lon: Double) {
         viewModelScope.launch {
-            val hourlyWeatherList = weatherRepository.getHourlyWeatherList(lat, lon)
+            val hourlyWeatherList = withContext(Dispatchers.IO) {
+                weatherRepository.getHourlyWeatherList(
+                    lat,
+                    lon
+                )
+            }
             _currentWeather.value = getCurrentWeather(hourlyWeatherList)
             _predictHourlyWeatherList.value = getPredictHourlyWeatherList(hourlyWeatherList)
         }
@@ -58,7 +67,12 @@ class WeatherInfoViewModel @Inject constructor(
 
     private fun loadDailyWeather(lat: Double, lon: Double) {
         viewModelScope.launch {
-            _predictDailyWeatherList.value = weatherRepository.getDailyWeatherList(lat, lon)
+            _predictDailyWeatherList.value = withContext(Dispatchers.IO) {
+                weatherRepository.getDailyWeatherList(
+                    lat,
+                    lon
+                )
+            }
         }
     }
 
