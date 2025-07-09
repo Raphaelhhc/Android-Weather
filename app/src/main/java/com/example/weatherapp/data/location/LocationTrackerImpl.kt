@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.weatherapp.domain.location.LocationTracker
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -43,34 +44,22 @@ class LocationTrackerImpl(
                 LocationManager.NETWORK_PROVIDER
             )
 
-        Log.d("LocationTrackerImpl", "$hasAccessCoarseLocation $hasAccessFineLocation $isGpsEnabled")
         if (!hasAccessFineLocation && !hasAccessCoarseLocation || !isGpsEnabled)
             return null
 
         return suspendCancellableCoroutine { continuation ->
-            Log.d("LocationTrackerImpl", "suspendCancellableCoroutine")
-            client.lastLocation.apply {
-                Log.d("LocationTrackerImpl", "isComplete: $isComplete isSuccessful $isSuccessful")
 
-                if (isComplete) {
-                    if (isSuccessful) continuation.resume(result)
-                    else continuation.resume(null)
-                    return@suspendCancellableCoroutine
-                }
-
-                addOnSuccessListener { location ->
-                    continuation.resume(location)
-                }
-
-                addOnFailureListener {
-                    continuation.resume(null)
-                }
-
-                addOnCanceledListener {
-                    continuation.cancel()
-                }
-
+            client.getCurrentLocation(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                null
+            ).addOnSuccessListener { location ->
+                continuation.resume(location)
+            }.addOnFailureListener {
+                continuation.resume(null)
+            }.addOnCanceledListener {
+                continuation.cancel()
             }
+
         }
 
     }

@@ -5,12 +5,20 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
 
@@ -47,11 +55,9 @@ fun WeatherInfoScreen(
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
 
-        Log.d("WeatherInfoScreen", "$hasAccessFineLocation $hasAccessCoarseLocation")
         if (hasAccessFineLocation || hasAccessCoarseLocation) {
             vm.loadCurrentLocation()
         } else {
-            Log.d("WeatherInfoScreen", "ELSE")
             permissionLauncher.launch(
                 arrayOf(
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -61,10 +67,20 @@ fun WeatherInfoScreen(
         }
     }
 
-    if (location != null) {
-        Text("Lat: ${location!!.latitude}, Lon: ${location!!.longitude}")
-    } else {
-        Text("Fetching location...")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Current Location
+        Text("Location", fontSize = 20.sp)
+        if (location != null) {
+            Text("Lat: ${location!!.latitude}, Lon: ${location!!.longitude}")
+        } else {
+            Text("Fetching location...")
+        }
     }
 
 }

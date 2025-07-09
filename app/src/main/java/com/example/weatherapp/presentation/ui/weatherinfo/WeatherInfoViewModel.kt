@@ -20,11 +20,9 @@ class WeatherInfoViewModel @Inject constructor(
     val location: StateFlow<Location?> = _location
 
     fun loadCurrentLocation() {
-        Log.d("VM", "start loadCurrentLocation location: ${_location.value}")
         viewModelScope.launch {
             _location.value = locationTracker.getCurrentLocation()
         }
-        Log.d("VM", "end loadCurrentLocation location: ${_location.value}")
     }
 
 }
