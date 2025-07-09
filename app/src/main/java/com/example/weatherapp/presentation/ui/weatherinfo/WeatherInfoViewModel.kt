@@ -2,16 +2,19 @@ package com.example.weatherapp.presentation.ui.weatherinfo
 
 import android.location.Location
 import android.util.Log
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.weatherapp.domain.location.LocationTracker
 import com.example.weatherapp.domain.model.DailyWeatherData
 import com.example.weatherapp.domain.model.HourlyWeatherData
 import com.example.weatherapp.domain.repository.WeatherRepository
+import com.example.weatherapp.domain.resource.Resource
+import com.example.weatherapp.presentation.ui.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -22,24 +25,41 @@ class WeatherInfoViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository
 ) : ViewModel() {
 
-    private val _location = MutableStateFlow<Location?>(null)
-    val location: StateFlow<Location?> = _location
-
-    private val _currentWeather = MutableStateFlow<HourlyWeatherData?>(null)
-    val currentWeather: StateFlow<HourlyWeatherData?> = _currentWeather
-
-    private val _predictHourlyWeatherList = MutableStateFlow<List<HourlyWeatherData>?>(null)
-    val predictHourlyWeatherList: StateFlow<List<HourlyWeatherData>?> = _predictHourlyWeatherList
-
-    private val _predictDailyWeatherList = MutableStateFlow<List<DailyWeatherData>?>(null)
-    val predictDailyWeatherList: StateFlow<List<DailyWeatherData>?> = _predictDailyWeatherList
+    var uiState by mutableStateOf(UiState())
 
     fun load() {
         viewModelScope.launch {
+
+            uiState = uiState.copy(
+                isLoading = true,
+                error = null
+            )
+
             val location = loadCurrentLocation()
-            location?.let {
-                loadHourlyWeather(location.latitude, location.longitude)
-                loadDailyWeather(location.latitude, location.longitude)
+            location?.let { loc ->
+                val hourlyResult = loadHourlyWeather(loc.latitude, loc.longitude)
+                val dailyResult = loadDailyWeather(loc.latitude, loc.longitude)
+                if (hourlyResult is Resource.Error || dailyResult is Resource.Error) {
+                    val message = hourlyResult.message + dailyResult.message
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        error = message
+                    )
+                } else {
+                    uiState = uiState.copy(
+                        location = loc,
+                        currentWeather = getCurrentWeather(hourlyResult.data),
+                        predictHourlyWeatherList = getPredictHourlyWeatherList(hourlyResult.data),
+                        predictDailyWeatherList = dailyResult.data,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+            } ?: run {
+                uiState = uiState.copy(
+                    isLoading = false,
+                    error = "Couldn't retrieve location"
+                )
             }
         }
     }
@@ -48,31 +68,26 @@ class WeatherInfoViewModel @Inject constructor(
         val location = withContext(Dispatchers.IO) {
             locationTracker.getCurrentLocation()
         }
-        _location.value = location
         return location
     }
 
-    private fun loadHourlyWeather(lat: Double, lon: Double) {
-        viewModelScope.launch {
-            val hourlyWeatherList = withContext(Dispatchers.IO) {
-                weatherRepository.getHourlyWeatherList(
-                    lat,
-                    lon
-                )
-            }
-            _currentWeather.value = getCurrentWeather(hourlyWeatherList)
-            _predictHourlyWeatherList.value = getPredictHourlyWeatherList(hourlyWeatherList)
+    private suspend fun loadHourlyWeather(lat: Double, lon: Double):
+            Resource<List<HourlyWeatherData>> {
+        return withContext(Dispatchers.IO) {
+            weatherRepository.getHourlyWeatherList(
+                lat,
+                lon
+            )
         }
     }
 
-    private fun loadDailyWeather(lat: Double, lon: Double) {
-        viewModelScope.launch {
-            _predictDailyWeatherList.value = withContext(Dispatchers.IO) {
-                weatherRepository.getDailyWeatherList(
-                    lat,
-                    lon
-                )
-            }
+    private suspend fun loadDailyWeather(lat: Double, lon: Double):
+            Resource<List<DailyWeatherData>> {
+        return withContext(Dispatchers.IO) {
+            weatherRepository.getDailyWeatherList(
+                lat,
+                lon
+            )
         }
     }
 

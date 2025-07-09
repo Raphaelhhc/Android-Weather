@@ -6,23 +6,26 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavHostController
+import com.example.weatherapp.presentation.ui.UiState
 
 @Composable
 fun WeatherInfoScreen(
@@ -30,11 +33,6 @@ fun WeatherInfoScreen(
     nv: NavHostController
 ) {
     val context = LocalContext.current
-
-    val location by vm.location.collectAsState()
-    val currentWeather by vm.currentWeather.collectAsState()
-    val predictHourlyWeatherList by vm.predictHourlyWeatherList.collectAsState()
-    val predictDailyWeatherList by vm.predictDailyWeatherList.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -72,6 +70,32 @@ fun WeatherInfoScreen(
         }
     }
 
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Info(vm.uiState)
+
+        if (vm.uiState.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
+        vm.uiState.error?.let { error ->
+            Text(
+                text = error,
+                color = Color.Red,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+
+
+}
+
+@Composable
+fun Info(uiState: UiState) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,29 +106,33 @@ fun WeatherInfoScreen(
     ) {
         // Current Location
         Text("Location", fontSize = 20.sp)
-        if (location != null) {
-            Text("Lat: ${location!!.latitude}, Lon: ${location!!.longitude}")
+        if (uiState.location != null) {
+            Text("Lat: ${uiState.location.latitude}, Lon: ${uiState.location.longitude}")
         } else {
             Text("Fetching location...")
         }
 
         // Current Weather
         Text("Current Weather", fontSize = 20.sp)
-        if (currentWeather != null) {
-            Text("Weather: ${currentWeather!!.weatherCode} " +
-                    "Temp.: ${currentWeather!!.temperature} " +
-                    "Rain poss.: ${currentWeather!!.precipitation}")
+        if (uiState.currentWeather != null) {
+            Text(
+                "Weather: ${uiState.currentWeather.weatherCode} " +
+                        "Temp.: ${uiState.currentWeather.temperature} " +
+                        "Rain poss.: ${uiState.currentWeather.precipitation}"
+            )
         } else {
             Text("Fetching current weather...")
         }
 
         // Hourly Weather Prediction next 24 hours
         Text("Hourly Weather", fontSize = 20.sp)
-        if (predictHourlyWeatherList != null) {
-            predictHourlyWeatherList!!.forEach { weather ->
-                Text("Weather: ${weather.weatherCode} " +
-                        "Temp.: ${weather.temperature} " +
-                        "Rain poss.: ${weather.precipitation}")
+        if (uiState.predictHourlyWeatherList != null) {
+            uiState.predictHourlyWeatherList.forEach { weather ->
+                Text(
+                    "Weather: ${weather.weatherCode} " +
+                            "Temp.: ${weather.temperature} " +
+                            "Rain poss.: ${weather.precipitation}"
+                )
             }
         } else {
             Text("Fetching hourly weather...")
@@ -112,16 +140,17 @@ fun WeatherInfoScreen(
 
         // Daily Weather Prediction next 14 days
         Text("Daily Weather", fontSize = 20.sp)
-        if (predictDailyWeatherList != null) {
-            predictDailyWeatherList!!.forEach { weather ->
-                Text("Weather: ${weather.weatherCode} " +
-                        "Max Temp.: ${weather.maxTemperature} " +
-                        "Main Temp.: ${weather.minTemperature} " +
-                        "Rain poss.: ${weather.precipitation}")
+        if (uiState.predictDailyWeatherList != null) {
+            uiState.predictDailyWeatherList.forEach { weather ->
+                Text(
+                    "Weather: ${weather.weatherCode} " +
+                            "Max Temp.: ${weather.maxTemperature} " +
+                            "Main Temp.: ${weather.minTemperature} " +
+                            "Rain poss.: ${weather.precipitation}"
+                )
             }
         } else {
             Text("Fetching daily weather...")
         }
     }
-
 }
