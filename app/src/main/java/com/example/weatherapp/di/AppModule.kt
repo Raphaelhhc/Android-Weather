@@ -3,7 +3,9 @@ package com.example.weatherapp.di
 import android.app.Application
 import com.example.weatherapp.data.location.LocationTrackerImpl
 import com.example.weatherapp.data.remote.WeatherApi
+import com.example.weatherapp.data.repository.WeatherRepositoryImpl
 import com.example.weatherapp.domain.location.LocationTracker
+import com.example.weatherapp.domain.repository.WeatherRepository
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import dagger.Module
@@ -49,6 +51,14 @@ object AppModule {
         client: FusedLocationProviderClient
     ): LocationTracker {
         return LocationTrackerImpl(app, client)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWeatherRepository(
+        api: WeatherApi
+    ): WeatherRepository {
+        return WeatherRepositoryImpl(api)
     }
 
 }

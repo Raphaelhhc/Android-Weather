@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +32,9 @@ fun WeatherInfoScreen(
     val context = LocalContext.current
 
     val location by vm.location.collectAsState()
+    val currentWeather by vm.currentWeather.collectAsState()
+    val predictHourlyWeatherList by vm.predictHourlyWeatherList.collectAsState()
+    val predictDailyWeatherList by vm.predictDailyWeatherList.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -38,7 +43,7 @@ fun WeatherInfoScreen(
             permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
                     || permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
-            vm.loadCurrentLocation()
+            vm.load()
         }
     }
 
@@ -56,7 +61,7 @@ fun WeatherInfoScreen(
             ) == PackageManager.PERMISSION_GRANTED
 
         if (hasAccessFineLocation || hasAccessCoarseLocation) {
-            vm.loadCurrentLocation()
+            vm.load()
         } else {
             permissionLauncher.launch(
                 arrayOf(
@@ -70,7 +75,8 @@ fun WeatherInfoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(state = rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -80,6 +86,41 @@ fun WeatherInfoScreen(
             Text("Lat: ${location!!.latitude}, Lon: ${location!!.longitude}")
         } else {
             Text("Fetching location...")
+        }
+
+        // Current Weather
+        Text("Current Weather", fontSize = 20.sp)
+        if (currentWeather != null) {
+            Text("Weather: ${currentWeather!!.weatherCode} " +
+                    "Temp.: ${currentWeather!!.temperature} " +
+                    "Rain poss.: ${currentWeather!!.precipitation}")
+        } else {
+            Text("Fetching current weather...")
+        }
+
+        // Hourly Weather Prediction next 24 hours
+        Text("Hourly Weather", fontSize = 20.sp)
+        if (predictHourlyWeatherList != null) {
+            predictHourlyWeatherList!!.forEach { weather ->
+                Text("Weather: ${weather.weatherCode} " +
+                        "Temp.: ${weather.temperature} " +
+                        "Rain poss.: ${weather.precipitation}")
+            }
+        } else {
+            Text("Fetching hourly weather...")
+        }
+
+        // Daily Weather Prediction next 14 days
+        Text("Daily Weather", fontSize = 20.sp)
+        if (predictDailyWeatherList != null) {
+            predictDailyWeatherList!!.forEach { weather ->
+                Text("Weather: ${weather.weatherCode} " +
+                        "Max Temp.: ${weather.maxTemperature} " +
+                        "Main Temp.: ${weather.minTemperature} " +
+                        "Rain poss.: ${weather.precipitation}")
+            }
+        } else {
+            Text("Fetching daily weather...")
         }
     }
 
