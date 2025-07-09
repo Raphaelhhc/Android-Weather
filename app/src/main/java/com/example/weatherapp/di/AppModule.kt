@@ -1,9 +1,15 @@
 package com.example.weatherapp.di
 
+import android.app.Application
+import com.example.weatherapp.data.location.LocationTrackerImpl
 import com.example.weatherapp.data.remote.WeatherApi
+import com.example.weatherapp.domain.location.LocationTracker
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -24,6 +30,25 @@ object AppModule {
             .build()
             .create()
 
+    }
+
+    @Provides
+    @Singleton
+    fun provideFusedLocationProviderClient(
+        app: Application
+    ): FusedLocationProviderClient {
+
+        return LocationServices.getFusedLocationProviderClient(app)
+
+    }
+
+    @Provides
+    @Singleton
+    fun provideLocationTracker(
+        app: Application,
+        client: FusedLocationProviderClient
+    ): LocationTracker {
+        return LocationTrackerImpl(app, client)
     }
 
 }
