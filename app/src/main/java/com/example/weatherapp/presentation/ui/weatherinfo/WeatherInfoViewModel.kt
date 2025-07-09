@@ -57,7 +57,6 @@ class WeatherInfoViewModel @Inject constructor(
     }
 
     private fun loadDailyWeather(lat: Double, lon: Double) {
-        Log.d("AAA", "AAA")
         viewModelScope.launch {
             _predictDailyWeatherList.value = weatherRepository.getDailyWeatherList(lat, lon)
         }
